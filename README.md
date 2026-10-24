@@ -10,6 +10,12 @@ npm run dev        # http://localhost:3000
 npm run build && npm start   # production
 ```
 
+## Deploy
+
+- Live: https://e24news.vercel.app — repo: https://github.com/sravan-dev/e24news
+- Vercel project `e24news` is connected to this repo: every push to `main` deploys to production; other branches get preview URLs.
+- Environment variables (Supabase keys, admin login, `SITE_URL`) are set in Vercel → Project → Settings → Environment Variables.
+
 ## Admin
 
 - URL: `/admin` (login at `/admin/login`)
