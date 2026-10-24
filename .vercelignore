@@ -1,0 +1,6 @@
+.env*
+.next
+node_modules
+design.png
+logo.jpg
+*.tsbuildinfo
