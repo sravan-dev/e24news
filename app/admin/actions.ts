@@ -5,13 +5,12 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import {
   authConfigured,
+  beginLoginAttempt,
   checkCredentials,
-  clearLoginFailures,
+  clearLoginAttempts,
   createSession,
   destroySession,
-  recordLoginFailure,
   requireAdmin,
-  throttleLogin,
 } from "@/lib/auth";
 import { getCategory } from "@/lib/categories";
 import {
@@ -33,14 +32,13 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   if (!authConfigured()) {
     return { error: "Admin login is not configured (ADMIN_USER, ADMIN_PASSWORD, SESSION_SECRET of 32+ characters)." };
   }
-  // Vercel sets x-real-ip to the client address; clients cannot override it.
-  const ip = (await headers()).get("x-real-ip");
-  await throttleLogin(ip);
-  if (!checkCredentials(user, password)) {
-    recordLoginFailure(ip);
-    return { error: "Invalid username or password." };
+  // Vercel sets x-real-ip to the client address; clients cannot override it. Local dev has none.
+  const ip = (await headers()).get("x-real-ip") ?? "local";
+  if (!(await beginLoginAttempt(ip))) {
+    return { error: "Too many login attempts from your network. Try again in 15 minutes." };
   }
-  clearLoginFailures(ip);
+  if (!checkCredentials(user, password)) return { error: "Invalid username or password." };
+  await clearLoginAttempts(ip);
   await createSession(user);
   redirect("/admin");
 }

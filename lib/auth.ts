@@ -2,6 +2,7 @@ import "server-only";
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { admin } from "./supabase";
 
 const COOKIE = "e24_admin";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -36,33 +37,37 @@ export function checkCredentials(user: string, password: string): boolean {
   return userOk && passOk;
 }
 
-// Brute-force brake: failed logins from an IP add a growing delay (per server instance).
-// No hard lockout, so an attacker can't lock the real admin out; correct credentials always work.
-const failures = new Map<string, { count: number; last: number }>();
+// Brute-force limit, stored in Supabase so it holds across all server instances.
+// Each attempt is recorded *before* the password is checked, so parallel requests count too.
+// The IP comes from Vercel's x-real-ip (not spoofable), so an attacker can only lock out their own address.
 const WINDOW_MS = 15 * 60 * 1000;
-const MAX_DELAY_MS = 8000;
+const MAX_ATTEMPTS = 10; // per IP per window
 
-function failureCount(ip: string): number {
-  const f = failures.get(ip);
-  if (!f || Date.now() - f.last > WINDOW_MS) return 0;
-  return f.count;
-}
-
-/** Waits longer the more recent failures this IP has (0s for the first 2, then 1s, 2s, ... up to 8s). */
-export async function throttleLogin(ip: string | null): Promise<void> {
-  if (!ip) return;
-  const delay = Math.min(Math.max(0, failureCount(ip) - 2) * 1000, MAX_DELAY_MS);
+/** Records an attempt for this IP. Returns false when the IP is over the limit (don't check credentials). */
+export async function beginLoginAttempt(ip: string): Promise<boolean> {
+  const db = admin();
+  const since = new Date(Date.now() - WINDOW_MS).toISOString();
+  // Drop expired rows (bounded cleanup) and record this attempt.
+  await db.from("login_attempts").delete().lt("attempted_at", since);
+  const { error } = await db.from("login_attempts").insert({ ip });
+  if (error) throw new Error(`login_attempts: ${error.message}`);
+  const { count, error: countError } = await db
+    .from("login_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .gte("attempted_at", since);
+  if (countError) throw new Error(`login_attempts: ${countError.message}`);
+  const n = count ?? MAX_ATTEMPTS + 1;
+  if (n > MAX_ATTEMPTS) return false;
+  // Small growing delay after the first few attempts.
+  const delay = Math.min(Math.max(0, n - 3) * 500, 3000);
   if (delay) await new Promise((r) => setTimeout(r, delay));
+  return true;
 }
 
-export function recordLoginFailure(ip: string | null): void {
-  if (!ip) return;
-  failures.set(ip, { count: failureCount(ip) + 1, last: Date.now() });
-  if (failures.size > 10_000) failures.clear(); // keep memory bounded
-}
-
-export function clearLoginFailures(ip: string | null): void {
-  if (ip) failures.delete(ip);
+/** Successful login: forget this IP's attempts. */
+export async function clearLoginAttempts(ip: string): Promise<void> {
+  await admin().from("login_attempts").delete().eq("ip", ip);
 }
 
 export async function createSession(user: string): Promise<void> {
