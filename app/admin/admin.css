@@ -105,3 +105,19 @@
 .cat-delete { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; background: #fff7f7; border: 1px solid #f0c4c4; border-radius: 8px; }
 .cat-delete select { border: 1px solid #d5d8de; border-radius: 6px; padding: 6px 8px; font-size: 14px; background: #fff; }
 .cat-delete select:disabled { opacity: .5; }
+
+/* Settings */
+.set-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; max-width: 1000px; align-items: start; }
+.set-grid h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.set-sub { color: #6b7280; font-size: 13px; margin-bottom: 14px; }
+.set-form { display: flex; flex-direction: column; gap: 12px; }
+.set-form .notice { margin-bottom: 0; }
+.set-form .adm-btn { align-self: flex-start; }
+.field input[type="password"] { width: 100%; border: 1px solid #d5d8de; border-radius: 6px; padding: 9px 11px; font-size: 14px; font-family: inherit; background: #fff; margin-top: 6px; font-weight: 400; }
+.set-form .field input[type="text"] { margin-top: 6px; font-weight: 400; }
+.user-row .user-name { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.user-row .user-name small { color: #6b7280; flex-basis: 100%; }
+.user-row .adm-btn { padding: 7px 12px; font-size: 13px; }
+.user-reset { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; background: #f7f9fc; border: 1px solid #e3e5e9; border-radius: 8px; }
+.user-reset input { flex: 1 1 180px; border: 1px solid #d5d8de; border-radius: 6px; padding: 7px 9px; font-size: 14px; background: #fff; }
+@media (max-width: 900px) { .set-grid { grid-template-columns: 1fr; } }

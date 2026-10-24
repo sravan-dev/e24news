@@ -1,13 +1,15 @@
 import "server-only";
 import crypto from "crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { admin } from "./supabase";
+import { sessionVersion } from "./users";
 
 const COOKIE = "e24_admin";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-// No fallbacks: without a strong SESSION_SECRET and explicit admin credentials, nobody can sign in.
+// No fallbacks: without a strong SESSION_SECRET nobody can sign in. Accounts live in lib/users.ts.
 function secret(): string | null {
   const s = process.env.SESSION_SECRET;
   return s && s.length >= 32 ? s : null;
@@ -26,15 +28,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 export function authConfigured(): boolean {
-  return !!(process.env.ADMIN_USER && process.env.ADMIN_PASSWORD && secret());
-}
-
-export function checkCredentials(user: string, password: string): boolean {
-  if (!authConfigured()) return false;
-  // Compare both fields so timing doesn't reveal which one was wrong.
-  const userOk = safeEqual(user, process.env.ADMIN_USER!);
-  const passOk = safeEqual(password, process.env.ADMIN_PASSWORD!);
-  return userOk && passOk;
+  return !!secret();
 }
 
 // Brute-force limit, stored in Supabase so it holds across all server instances.
@@ -70,8 +64,9 @@ export async function clearLoginAttempts(ip: string): Promise<void> {
   await admin().from("login_attempts").delete().eq("ip", ip);
 }
 
-export async function createSession(user: string): Promise<void> {
-  const payload = `${user}.${Date.now() + MAX_AGE * 1000}`;
+/** `version` is the account's session version; changing the password bumps it and ends older sessions. */
+export async function createSession(user: string, version: number): Promise<void> {
+  const payload = `${user}.${version}.${Date.now() + MAX_AGE * 1000}`;
   const store = await cookies();
   store.set(COOKIE, `${Buffer.from(payload).toString("base64url")}.${sign(payload)}`, {
     httpOnly: true,
@@ -86,18 +81,25 @@ export async function destroySession(): Promise<void> {
   (await cookies()).delete(COOKIE);
 }
 
-export async function getSessionUser(): Promise<string | null> {
+/** The signed-in username, or null. Checked against the database once per request. */
+export const getSessionUser = cache(async (): Promise<string | null> => {
   const raw = (await cookies()).get(COOKIE)?.value;
   if (!raw || !secret()) return null;
   const [b64, sig] = raw.split(".");
   if (!b64 || !sig) return null;
   const payload = Buffer.from(b64, "base64url").toString();
   if (!safeEqual(sign(payload), sig)) return null;
-  const dot = payload.lastIndexOf(".");
-  const expires = Number(payload.slice(dot + 1));
-  if (!expires || Date.now() > expires) return null;
-  return payload.slice(0, dot);
-}
+  // payload = user.version.expires (the username itself may contain dots)
+  const parts = payload.split(".");
+  if (parts.length < 3) return null;
+  const expires = Number(parts.pop());
+  const version = Number(parts.pop());
+  const user = parts.join(".");
+  if (!expires || Date.now() > expires || !Number.isInteger(version)) return null;
+  // Deleted accounts and sessions from before a password change are rejected.
+  if ((await sessionVersion(user)) !== version) return null;
+  return user;
+});
 
 export async function requireAdmin(): Promise<string> {
   const user = await getSessionUser();

@@ -19,7 +19,9 @@ npm run build && npm start   # production
 ## Admin
 
 - URL: `/admin` (login at `/admin/login`)
-- Credentials come from `.env.local` (`ADMIN_USER`, `ADMIN_PASSWORD`). Change them and `SESSION_SECRET` before going live.
+- First sign-in uses `ADMIN_USER` / `ADMIN_PASSWORD` from `.env.local`; `SESSION_SECRET` (32+ chars) is always required.
+- `/admin/settings`: change your password, add admin users, reset another user's password, delete users. Accounts are stored in Supabase `public.admin_users` (scrypt hashes). Once that table has a row, the env credentials stop working. Changing a password signs that account out on other devices.
+- Locked out of every account? Delete the rows in `public.admin_users` from the Supabase dashboard to fall back to the env credentials.
 - Add / edit / delete news, upload a featured image (or paste a URL), set category, author, tags, publish date, draft/published.
 - Manage categories at `/admin/categories`: add, rename, change slug/colour/menu order, hide from menu, delete (only when empty).
 - Toggle **Featured** (homepage hero + "Make it modern") and **Trending** (top ticker) right from the list.

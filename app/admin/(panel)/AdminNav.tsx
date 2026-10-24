@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/admin", label: "All news" },
   { href: "/admin/new", label: "Add news" },
   { href: "/admin/categories", label: "Categories" },
+  { href: "/admin/settings", label: "Settings" },
   { href: "/", label: "View site ↗", external: true },
 ];
 

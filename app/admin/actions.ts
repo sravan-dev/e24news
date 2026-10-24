@@ -6,12 +6,21 @@ import { headers } from "next/headers";
 import {
   authConfigured,
   beginLoginAttempt,
-  checkCredentials,
   clearLoginAttempts,
   createSession,
   destroySession,
   requireAdmin,
 } from "@/lib/auth";
+import {
+  createUser,
+  deleteUser,
+  loginAvailable,
+  normalizeUsername,
+  passwordProblem,
+  setPassword,
+  USERNAME_RE,
+  verifyLogin,
+} from "@/lib/users";
 import {
   createCategory,
   deleteCategory,
@@ -38,8 +47,8 @@ export type FormState = { error?: string; ok?: string } | undefined;
 export async function login(_: FormState, form: FormData): Promise<FormState> {
   const user = String(form.get("user") ?? "").trim();
   const password = String(form.get("password") ?? "");
-  if (!authConfigured()) {
-    return { error: "Admin login is not configured (ADMIN_USER, ADMIN_PASSWORD, SESSION_SECRET of 32+ characters)." };
+  if (!authConfigured() || !(await loginAvailable())) {
+    return { error: "Admin login is not configured (SESSION_SECRET of 32+ characters, and ADMIN_USER / ADMIN_PASSWORD for the first sign-in)." };
   }
   // Vercel sets x-real-ip to the client address; clients cannot override it.
   // Only local development (no proxy) falls back to a fixed key; production fails closed.
@@ -49,9 +58,10 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   if (!(await beginLoginAttempt(ip))) {
     return { error: "Too many login attempts from your network. Try again in 15 minutes." };
   }
-  if (!checkCredentials(user, password)) return { error: "Invalid username or password." };
+  const account = await verifyLogin(user, password);
+  if (!account) return { error: "Invalid username or password." };
   await clearLoginAttempts(ip);
-  await createSession(user);
+  await createSession(account.username, account.version);
   redirect("/admin");
 }
 
@@ -205,5 +215,73 @@ export async function removeCategory(_: FormState, form: FormData): Promise<Form
     return { error: (e as Error).message };
   }
   revalidatePath("/", "layout");
+  return { ok: "Deleted." };
+}
+
+// ---------- Settings: admin users ----------
+
+/** Changes the signed-in admin's own password. Other devices are signed out; this one stays in. */
+export async function changeOwnPassword(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireAdmin();
+  const current = String(form.get("current") ?? "");
+  const password = String(form.get("password") ?? "");
+  const problem = passwordProblem(password, String(form.get("confirm") ?? ""));
+  if (problem) return { error: problem };
+  try {
+    if (!(await verifyLogin(me, current))) return { error: "Current password is wrong." };
+    if (current === password) return { error: "The new password must be different." };
+    await createSession(me, await setPassword(me, password));
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  revalidatePath("/admin/settings");
+  return { ok: "Password changed. Other devices have been signed out." };
+}
+
+export async function addUser(_: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  const username = normalizeUsername(String(form.get("username") ?? ""));
+  const password = String(form.get("password") ?? "");
+  if (!USERNAME_RE.test(username)) {
+    return { error: "Username must be 3–64 characters: letters, numbers, dots, dashes, underscores or @." };
+  }
+  const problem = passwordProblem(password, String(form.get("confirm") ?? ""));
+  if (problem) return { error: problem };
+  try {
+    await createUser(username, password);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  revalidatePath("/admin/settings");
+  return { ok: `Added "${username}".` };
+}
+
+/** Sets a new password for another admin and signs them out everywhere. */
+export async function resetUserPassword(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireAdmin();
+  const username = String(form.get("username") ?? "");
+  const password = String(form.get("password") ?? "");
+  const problem = passwordProblem(password, String(form.get("confirm") ?? ""));
+  if (problem) return { error: problem };
+  try {
+    const version = await setPassword(username, password);
+    if (username === me) await createSession(me, version);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  revalidatePath("/admin/settings");
+  return { ok: `New password set for "${username}".` };
+}
+
+export async function removeUser(_: FormState, form: FormData): Promise<FormState> {
+  const me = await requireAdmin();
+  const username = String(form.get("username") ?? "");
+  if (username === me) return { error: "You can't delete your own account." };
+  try {
+    await deleteUser(username);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  revalidatePath("/admin/settings");
   return { ok: "Deleted." };
 }
