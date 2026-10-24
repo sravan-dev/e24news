@@ -9,9 +9,9 @@ import {
   clearLoginFailures,
   createSession,
   destroySession,
-  loginBlocked,
   recordLoginFailure,
   requireAdmin,
+  throttleLogin,
 } from "@/lib/auth";
 import { getCategory } from "@/lib/categories";
 import {
@@ -33,11 +33,11 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   if (!authConfigured()) {
     return { error: "Admin login is not configured (ADMIN_USER, ADMIN_PASSWORD, SESSION_SECRET of 32+ characters)." };
   }
-  const h = await headers();
-  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "unknown";
-  if (loginBlocked(ip)) return { error: "Too many failed attempts. Try again in 15 minutes." };
+  // Vercel sets x-real-ip to the client address; clients cannot override it.
+  const ip = (await headers()).get("x-real-ip");
+  await throttleLogin(ip);
   if (!checkCredentials(user, password)) {
-    await recordLoginFailure(ip);
+    recordLoginFailure(ip);
     return { error: "Invalid username or password." };
   }
   clearLoginFailures(ip);

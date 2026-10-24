@@ -36,25 +36,33 @@ export function checkCredentials(user: string, password: string): boolean {
   return userOk && passOk;
 }
 
-// Basic brute-force brake: per-IP failure counter (per server instance) plus a fixed delay on failure.
-const failures = new Map<string, { count: number; until: number }>();
-const MAX_FAILURES = 5;
-const LOCK_MS = 15 * 60 * 1000;
+// Brute-force brake: failed logins from an IP add a growing delay (per server instance).
+// No hard lockout, so an attacker can't lock the real admin out; correct credentials always work.
+const failures = new Map<string, { count: number; last: number }>();
+const WINDOW_MS = 15 * 60 * 1000;
+const MAX_DELAY_MS = 8000;
 
-export function loginBlocked(ip: string): boolean {
+function failureCount(ip: string): number {
   const f = failures.get(ip);
-  return !!f && f.count >= MAX_FAILURES && Date.now() < f.until;
+  if (!f || Date.now() - f.last > WINDOW_MS) return 0;
+  return f.count;
 }
 
-export async function recordLoginFailure(ip: string): Promise<void> {
-  const f = failures.get(ip);
-  const fresh = !f || Date.now() >= f.until;
-  failures.set(ip, { count: fresh ? 1 : f!.count + 1, until: Date.now() + LOCK_MS });
-  await new Promise((r) => setTimeout(r, 800));
+/** Waits longer the more recent failures this IP has (0s for the first 2, then 1s, 2s, ... up to 8s). */
+export async function throttleLogin(ip: string | null): Promise<void> {
+  if (!ip) return;
+  const delay = Math.min(Math.max(0, failureCount(ip) - 2) * 1000, MAX_DELAY_MS);
+  if (delay) await new Promise((r) => setTimeout(r, delay));
 }
 
-export function clearLoginFailures(ip: string): void {
-  failures.delete(ip);
+export function recordLoginFailure(ip: string | null): void {
+  if (!ip) return;
+  failures.set(ip, { count: failureCount(ip) + 1, last: Date.now() });
+  if (failures.size > 10_000) failures.clear(); // keep memory bounded
+}
+
+export function clearLoginFailures(ip: string | null): void {
+  if (ip) failures.delete(ip);
 }
 
 export async function createSession(user: string): Promise<void> {
