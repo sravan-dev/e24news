@@ -1,11 +1,21 @@
 "use client";
 
-import { startTransition, useActionState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import type { Category } from "@/lib/types";
 import { removeCategory, saveCategory } from "../../actions";
 
 /** One editable category (or the "add new" form when `category` is undefined). */
-export default function CategoryRow({ category, count = 0 }: { category?: Category; count?: number }) {
+export default function CategoryRow({
+  category,
+  count = 0,
+  others = [],
+}: {
+  category?: Category;
+  count?: number;
+  others?: { slug: string; name: string }[];
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [mode, setMode] = useState<"move" | "delete">("move");
   const [saveState, save, saving] = useActionState(saveCategory, undefined);
   const [delState, del, deleting] = useActionState(removeCategory, undefined);
   const state = delState ?? saveState;
@@ -57,20 +67,59 @@ export default function CategoryRow({ category, count = 0 }: { category?: Catego
           {saving ? "Saving..." : isNew ? "Add" : "Save"}
         </button>
       </form>
-      {!isNew && (
+      {!isNew && !confirming && (
+        <button
+          className="adm-btn danger"
+          type="button"
+          disabled={deleting}
+          onClick={() => {
+            if (count > 0) setConfirming(true);
+            else if (window.confirm(`Delete category "${category.name}"?`)) {
+              const data = new FormData();
+              data.set("slug", category.slug);
+              startTransition(() => del(data));
+            }
+          }}
+        >
+          Delete
+        </button>
+      )}
+      {!isNew && confirming && (
         <form
+          className="cat-delete"
           action={del}
           onSubmit={(e) => {
-            if (!window.confirm(`Delete category "${category.name}"?`)) e.preventDefault();
+            const msg =
+              mode === "delete"
+                ? `Permanently delete "${category.name}" AND its ${count} article${count === 1 ? "" : "s"}? This cannot be undone.`
+                : `Delete "${category.name}" and move its ${count} article${count === 1 ? "" : "s"}?`;
+            if (!window.confirm(msg)) e.preventDefault();
           }}
         >
           <input type="hidden" name="slug" value={category.slug} />
-          <button
-            className="adm-btn danger"
-            disabled={deleting || count > 0}
-            title={count > 0 ? "Move or delete its articles first" : "Delete category"}
-          >
-            Delete
+          <b>
+            &ldquo;{category.name}&rdquo; has {count} article{count === 1 ? "" : "s"}.
+          </b>
+          <label className="check">
+            <input type="radio" name="mode" value="move" checked={mode === "move"} onChange={() => setMode("move")} />
+            Move them to
+          </label>
+          <select name="target" disabled={mode !== "move"} defaultValue={others[0]?.slug} aria-label="Move articles to">
+            {others.map((o) => (
+              <option key={o.slug} value={o.slug}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+          <label className="check">
+            <input type="radio" name="mode" value="delete" checked={mode === "delete"} onChange={() => setMode("delete")} />
+            Delete them too
+          </label>
+          <button className="adm-btn danger" disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete category"}
+          </button>
+          <button className="adm-btn ghost" type="button" onClick={() => setConfirming(false)}>
+            Cancel
           </button>
         </form>
       )}

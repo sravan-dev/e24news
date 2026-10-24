@@ -20,7 +20,7 @@ export default async function CategoriesPage() {
 
       <div className="adm-table-wrap">
         <div className="cat-head cat-cols">
-          <span>Colour</span>
+          <span title="Colour" />
           <span>Name</span>
           <span>Slug (URL)</span>
           <span>Order</span>
@@ -28,14 +28,18 @@ export default async function CategoriesPage() {
         </div>
         {categories.map((c) => (
           // Key on slug + updated values so the row resets after a save.
-          <CategoryRow key={`${c.slug}-${c.name}-${c.color}-${c.sortOrder}-${c.showInMenu}`} category={c} count={s.byCategory[c.slug] ?? 0} />
+          <CategoryRow
+            key={`${c.slug}-${c.name}-${c.color}-${c.sortOrder}-${c.showInMenu}`} category={c}
+            count={s.byCategory[c.slug] ?? 0}
+            others={categories.filter((o) => o.slug !== c.slug).map(({ slug, name }) => ({ slug, name }))}
+          />
         ))}
         {categories.length === 0 && <p style={{ padding: 20, color: "#6b7280" }}>No categories yet.</p>}
       </div>
       <p className="hint" style={{ color: "#6b7280", fontSize: 13, marginTop: 14 }}>
         Lower order numbers appear first in the menu. Untick &ldquo;Menu&rdquo; to hide a category from the menu and
         footer while keeping its page. Changing a slug moves its articles too; old links to /category/old-slug stop
-        working. A category can only be deleted when it has no articles. Home page sections (Qatar, Gulf, World, Grama
+        working. When deleting a category that has articles, you choose to move them to another category or delete them too. Home page sections (Qatar, Gulf, World, Grama
         Vartha, Tech, Movies, Sports) follow these slugs.
       </p>
     </>

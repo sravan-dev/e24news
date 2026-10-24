@@ -102,3 +102,6 @@
 .cat-msg { flex-basis: 100%; margin: 4px 0 0; padding: 7px 12px; }
 .cat-cols { display: grid; grid-template-columns: 38px minmax(120px, 1fr) minmax(120px, 1fr) 76px 268px; gap: 8px; }
 @media (max-width: 900px) { .cat-cols { display: none; } }
+.cat-delete { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; background: #fff7f7; border: 1px solid #f0c4c4; border-radius: 8px; }
+.cat-delete select { border: 1px solid #d5d8de; border-radius: 6px; padding: 6px 8px; font-size: 14px; background: #fff; }
+.cat-delete select:disabled { opacity: .5; }

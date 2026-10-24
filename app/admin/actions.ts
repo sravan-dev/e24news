@@ -16,6 +16,7 @@ import {
   createCategory,
   deleteCategory,
   getCategory,
+  moveArticles,
   updateCategory,
   type CategoryInput,
 } from "@/lib/categories";
@@ -24,6 +25,7 @@ import {
   createArticle,
   deleteArticle,
   getArticleById,
+  listArticles,
   removeImage,
   toggleFlag,
   updateArticle,
@@ -174,10 +176,31 @@ export async function saveCategory(_: FormState, form: FormData): Promise<FormSt
   return { ok: original ? "Saved." : `Added "${input.name}".` };
 }
 
+/**
+ * Deletes a category. If it still has articles, `mode` decides what happens to them:
+ * "move" reassigns them to `target`, "delete" deletes them (and their uploaded images).
+ */
 export async function removeCategory(_: FormState, form: FormData): Promise<FormState> {
   await requireAdmin();
+  const slug = String(form.get("slug") ?? "");
+  const mode = String(form.get("mode") ?? "");
+  const target = String(form.get("target") ?? "");
   try {
-    await deleteCategory(String(form.get("slug") ?? ""));
+    if (!(await getCategory(slug))) return { error: "Category not found — it may have been deleted." };
+    const { items } = await listArticles({ category: slug, includeDrafts: true });
+    if (items.length > 0) {
+      if (mode === "move") {
+        if (!target || target === slug || !(await getCategory(target))) {
+          return { error: "Choose another category to move the articles to." };
+        }
+        await moveArticles(slug, target);
+      } else if (mode === "delete") {
+        for (const a of items) await deleteArticle(a.id);
+      } else {
+        return { error: "Choose what to do with this category's articles." };
+      }
+    }
+    await deleteCategory(slug);
   } catch (e) {
     return { error: (e as Error).message };
   }

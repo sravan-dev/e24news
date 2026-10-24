@@ -67,6 +67,12 @@ export async function updateCategory(originalSlug: string, c: CategoryInput): Pr
   if (!count) throw new Error("Category not found — it may have been deleted.");
 }
 
+/** Moves every article (published and draft) from one category to another. */
+export async function moveArticles(fromSlug: string, toSlug: string): Promise<void> {
+  const { error } = await admin().from("articles").update({ category: toSlug }).eq("category", fromSlug);
+  if (error) throw new Error(error.message);
+}
+
 /** Deletes a category. Refused while articles still use it. */
 export async function deleteCategory(slug: string): Promise<void> {
   const { error } = await admin().from("categories").delete().eq("slug", slug);
