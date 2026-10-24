@@ -16,7 +16,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = await getArticleBySlug(decodeURIComponent((await params).slug));
-  if (!a) return { title: "Not found" };
+  // Don't reveal draft titles to visitors (admins can still preview the page).
+  if (!a || (a.status !== "published" && !(await getSessionUser()))) return { title: "Not found" };
   return {
     title: a.title,
     description: a.excerpt,

@@ -2,7 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { checkCredentials, createSession, destroySession, requireAdmin } from "@/lib/auth";
+import { headers } from "next/headers";
+import {
+  authConfigured,
+  checkCredentials,
+  clearLoginFailures,
+  createSession,
+  destroySession,
+  loginBlocked,
+  recordLoginFailure,
+  requireAdmin,
+} from "@/lib/auth";
 import { getCategory } from "@/lib/categories";
 import {
   createArticle,
@@ -20,7 +30,17 @@ export type FormState = { error?: string; ok?: string } | undefined;
 export async function login(_: FormState, form: FormData): Promise<FormState> {
   const user = String(form.get("user") ?? "").trim();
   const password = String(form.get("password") ?? "");
-  if (!checkCredentials(user, password)) return { error: "Invalid username or password." };
+  if (!authConfigured()) {
+    return { error: "Admin login is not configured (ADMIN_USER, ADMIN_PASSWORD, SESSION_SECRET of 32+ characters)." };
+  }
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "unknown";
+  if (loginBlocked(ip)) return { error: "Too many failed attempts. Try again in 15 minutes." };
+  if (!checkCredentials(user, password)) {
+    await recordLoginFailure(ip);
+    return { error: "Invalid username or password." };
+  }
+  clearLoginFailures(ip);
   await createSession(user);
   redirect("/admin");
 }
