@@ -146,7 +146,8 @@ export async function createUser(username: string, password: string): Promise<vo
   await storeEnvAccount();
   const { error } = await admin()
     .from("admin_users")
-    .insert({ username, password_hash: await hashPassword(password) });
+    // Random starting version so a deleted-then-recreated username never matches an old session cookie.
+    .insert({ username, password_hash: await hashPassword(password), session_version: crypto.randomInt(1, 2 ** 30) });
   if (error) throw new Error(error.code === "23505" ? `User "${username}" already exists.` : error.message);
 }
 
