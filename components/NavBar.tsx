@@ -3,17 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { CATEGORIES } from "@/lib/categories";
 import Icon from "./Icon";
 
-export default function NavBar() {
+export default function NavBar({ categories }: { categories: { slug: string; name: string }[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
 
-  const links = [{ href: "/", name: "Home" }, ...CATEGORIES.map((c) => ({ href: `/category/${c.slug}`, name: c.name }))];
+  const links = [{ href: "/", name: "Home" }, ...categories.map((c) => ({ href: `/category/${c.slug}`, name: c.name }))];
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (

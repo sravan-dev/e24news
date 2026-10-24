@@ -7,17 +7,17 @@ export function articleHref(a: Article) {
   return `/news/${a.slug}`;
 }
 
-export function CatLabel({ slug, inline }: { slug: string; inline?: boolean }) {
-  return <span className={`cat-label${inline ? " inline" : ""}`}>{categoryName(slug)}</span>;
+export async function CatLabel({ slug, inline }: { slug: string; inline?: boolean }) {
+  return <span className={`cat-label${inline ? " inline" : ""}`}>{await categoryName(slug)}</span>;
 }
 
-export function BlockTitle({ title, category, href }: { title: string; category?: string; href?: string }) {
-  const cat = category ? getCategory(category) : undefined;
+export async function BlockTitle({ title, category, href }: { title?: string; category?: string; href?: string }) {
+  const cat = category ? await getCategory(category) : undefined;
   const style = cat ? ({ "--bc": cat.color } as React.CSSProperties) : undefined;
   const link = href ?? (cat ? `/category/${cat.slug}` : undefined);
   return (
     <h2 className="block-title" style={style}>
-      {link ? <Link href={link}>{title}</Link> : <span>{title}</span>}
+      {link ? <Link href={link}>{title ?? cat?.name}</Link> : <span>{title ?? cat?.name}</span>}
     </h2>
   );
 }

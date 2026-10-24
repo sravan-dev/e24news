@@ -12,7 +12,14 @@ import {
   destroySession,
   requireAdmin,
 } from "@/lib/auth";
-import { getCategory } from "@/lib/categories";
+import {
+  createCategory,
+  deleteCategory,
+  getCategory,
+  updateCategory,
+  type CategoryInput,
+} from "@/lib/categories";
+import { slugify } from "@/lib/format";
 import {
   createArticle,
   deleteArticle,
@@ -32,8 +39,11 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   if (!authConfigured()) {
     return { error: "Admin login is not configured (ADMIN_USER, ADMIN_PASSWORD, SESSION_SECRET of 32+ characters)." };
   }
-  // Vercel sets x-real-ip to the client address; clients cannot override it. Local dev has none.
-  const ip = (await headers()).get("x-real-ip") ?? "local";
+  // Vercel sets x-real-ip to the client address; clients cannot override it.
+  // Only local development (no proxy) falls back to a fixed key; production fails closed.
+  const realIp = (await headers()).get("x-real-ip");
+  if (!realIp && process.env.VERCEL) return { error: "Could not verify your network address. Try again." };
+  const ip = realIp ?? "local-dev";
   if (!(await beginLoginAttempt(ip))) {
     return { error: "Too many login attempts from your network. Try again in 15 minutes." };
   }
@@ -75,7 +85,7 @@ export async function saveArticle(_: FormState, form: FormData): Promise<FormSta
   const f = parseForm(form);
 
   if (!f.title) return { error: "Title is required." };
-  if (!getCategory(f.category)) return { error: "Choose a category." };
+  if (!(await getCategory(f.category))) return { error: "Choose a category." };
   if (!f.content) return { error: "Content is required." };
 
   let image = f.imageUrl;
@@ -133,4 +143,44 @@ export async function toggleArticleFlag(form: FormData) {
   const flag = form.get("flag") === "trending" ? "trending" : "featured";
   await toggleFlag(String(form.get("id")), flag);
   revalidatePath("/", "layout");
+}
+
+// ---------- Categories ----------
+
+function parseCategory(form: FormData): CategoryInput | string {
+  const name = String(form.get("name") ?? "").trim();
+  const slug = slugify(String(form.get("slug") ?? "").trim() || name);
+  const color = String(form.get("color") ?? "#222222").trim();
+  const sortOrder = Number(form.get("sortOrder") ?? 0);
+  if (!name) return "Name is required.";
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) return "Slug may only contain lowercase letters, numbers and dashes.";
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) return "Colour must look like #1a73d0.";
+  if (!Number.isInteger(sortOrder)) return "Order must be a whole number.";
+  return { name, slug, color, sortOrder, showInMenu: form.get("showInMenu") === "on" };
+}
+
+export async function saveCategory(_: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  const input = parseCategory(form);
+  if (typeof input === "string") return { error: input };
+  const original = String(form.get("originalSlug") ?? "");
+  try {
+    if (original) await updateCategory(original, input);
+    else await createCategory(input);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  revalidatePath("/", "layout");
+  return { ok: original ? "Saved." : `Added "${input.name}".` };
+}
+
+export async function removeCategory(_: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  try {
+    await deleteCategory(String(form.get("slug") ?? ""));
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  revalidatePath("/", "layout");
+  return { ok: "Deleted." };
 }

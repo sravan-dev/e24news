@@ -34,6 +34,7 @@ export default async function ArticlePage({ params }: Props) {
   if (a.status === "published") await incrementViews(a.id);
 
   const related = (await listArticles({ category: a.category, excludeIds: [a.id], limit: 3 })).items;
+  const catName = await categoryName(a.category);
   const h = await headers();
   const origin = process.env.SITE_URL || `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
   const url = encodeURIComponent(`${origin}/news/${a.slug}`);
@@ -42,12 +43,12 @@ export default async function ArticlePage({ params }: Props) {
   return (
     <div className="container">
       <div className="breadcrumbs">
-        <Link href="/">Home</Link> › <Link href={`/category/${a.category}`}>{categoryName(a.category)}</Link>
+        <Link href="/">Home</Link> › <Link href={`/category/${a.category}`}>{catName}</Link>
       </div>
       <div className="with-sidebar">
         <article className="article">
           <Link href={`/category/${a.category}`} className="cat-label inline">
-            {categoryName(a.category)}
+            {catName}
           </Link>
           {a.status === "draft" && (
             <span className="cat-label inline" style={{ background: "#e3202b", marginLeft: 6 }}>
@@ -106,7 +107,7 @@ export default async function ArticlePage({ params }: Props) {
             <div>
               <b>{a.author}</b>
               <p className="excerpt" style={{ margin: "4px 0 0" }}>
-                Reporter at E24 News covering {categoryName(a.category)}.
+                Reporter at E24 News covering {catName}.
               </p>
             </div>
           </div>

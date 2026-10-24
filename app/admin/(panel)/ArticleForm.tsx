@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { startTransition, useActionState, useEffect, useState } from "react";
-import { CATEGORIES } from "@/lib/categories";
-import type { Article } from "@/lib/types";
+import type { Article, Category } from "@/lib/types";
 import { saveArticle } from "../actions";
 
 function toLocalInput(iso: string): string {
@@ -12,7 +11,7 @@ function toLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function ArticleForm({ article }: { article?: Article }) {
+export default function ArticleForm({ article, categories }: { article?: Article; categories: Category[] }) {
   const [state, action, pending] = useActionState(saveArticle, undefined);
   const [imageUrl, setImageUrl] = useState(article?.image ?? "");
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -112,7 +111,7 @@ export default function ArticleForm({ article }: { article?: Article }) {
               <option value="" disabled>
                 Choose...
               </option>
-              {CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <option key={c.slug} value={c.slug}>
                   {c.name}
                 </option>

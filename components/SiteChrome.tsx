@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CATEGORIES } from "@/lib/categories";
+import { getMenuCategories } from "@/lib/categories";
 import { longDate, truncate } from "@/lib/format";
 import { getLatest } from "@/lib/store";
 import Icon from "./Icon";
@@ -34,7 +34,8 @@ export function TopBar() {
   );
 }
 
-export function Header() {
+export async function Header() {
+  const categories = (await getMenuCategories()).map(({ slug, name }) => ({ slug, name }));
   return (
     <>
       <TopBar />
@@ -53,13 +54,13 @@ export function Header() {
           </div>
         </div>
       </header>
-      <NavBar />
+      <NavBar categories={categories} />
     </>
   );
 }
 
 export async function Footer() {
-  const latest = await getLatest(3);
+  const [latest, categories] = await Promise.all([getLatest(3), getMenuCategories()]);
   return (
     <footer className="footer">
       <div className="container top">
@@ -89,7 +90,7 @@ export async function Footer() {
         <div>
           <h4>Categories</h4>
           <ul>
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <li key={c.slug}>
                 <Link href={`/category/${c.slug}`}>{c.name}</Link>
               </li>

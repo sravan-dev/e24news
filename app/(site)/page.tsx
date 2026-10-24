@@ -3,6 +3,7 @@ import PagedBlock from "@/components/PagedBlock";
 import Pagination from "@/components/Pagination";
 import Sidebar, { MostPopular, RecentComments } from "@/components/Sidebar";
 import Trending from "@/components/Trending";
+import { getCategories } from "@/lib/categories";
 import { getLatest, listArticles } from "@/lib/store";
 import type { Article } from "@/lib/types";
 
@@ -51,11 +52,11 @@ function TwoBigPlusRows({ items }: { items: Article[] }) {
 }
 
 /** Overlay card on top, three small rows below (Tech / Movies / Sports columns). */
-function OverlayColumn({ title, category, items }: { title: string; category: string; items: Article[] }) {
+function OverlayColumn({ category, items }: { category: string; items: Article[] }) {
   const [first, ...rest] = items;
   return (
     <section>
-      <BlockTitle title={title} category={category} />
+      <BlockTitle category={category} />
       {first ? (
         <>
           <OverlayCard a={first} size="md" titleMax={60} />
@@ -74,6 +75,9 @@ function OverlayColumn({ title, category, items }: { title: string; category: st
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const page = Math.max(1, Number((await searchParams).page) || 1);
+  const categories = await getCategories();
+  // Home sections are tied to these slugs; a section disappears if its category is deleted.
+  const has = (slug: string) => categories.some((c) => c.slug === slug);
 
   const [featured, trending, dontMiss, qatar, gulf, world, grama, tech, movies, sports, latest] = await Promise.all([
     listArticles({ featured: true, limit: 4 }).then((r) => r.items),
@@ -124,13 +128,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 <PagedBlock pages={chunk(dontMiss, 5).map((p, i) => <BigPlusList key={i} items={p} />)} />
               </section>
 
+              {has("qatar") && (
               <section className="section">
-                <BlockTitle title="Qatar" category="qatar" />
+                <BlockTitle category="qatar" />
                 <PagedBlock pages={chunk(qatar, 6).map((p, i) => <TwoBigPlusRows key={i} items={p} />)} />
               </section>
+              )}
 
+              {has("gulf") && (
               <section className="section">
-                <BlockTitle title="Gulf" category="gulf" />
+                <BlockTitle category="gulf" />
                 <PagedBlock
                   pages={chunk(gulf, 3).map((p, i) => (
                     <div className="grid-3" key={i}>
@@ -141,28 +148,33 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                   ))}
                 />
               </section>
+              )}
 
+              {has("world") && (
               <section className="section">
-                <BlockTitle title="World" category="world" />
+                <BlockTitle category="world" />
                 <BigPlusList items={world} />
               </section>
+              )}
 
+              {has("grama-vartha") && (
               <section className="section">
-                <BlockTitle title="Grama Vartha" category="grama-vartha" />
+                <BlockTitle category="grama-vartha" />
                 <div className="list" style={{ gap: 40 }}>
                   {grama.map((a) => (
                     <CardH key={a.id} a={a} />
                   ))}
                 </div>
               </section>
+              )}
             </div>
             <Sidebar />
           </div>
 
           <div className="three-cols">
-            <OverlayColumn title="Tech" category="tech" items={tech} />
-            <OverlayColumn title="Movies" category="movies" items={movies} />
-            <OverlayColumn title="Sports" category="sports" items={sports} />
+            {has("tech") && <OverlayColumn category="tech" items={tech} />}
+            {has("movies") && <OverlayColumn category="movies" items={movies} />}
+            {has("sports") && <OverlayColumn category="sports" items={sports} />}
           </div>
 
           <div className="triple-band">

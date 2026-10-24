@@ -21,6 +21,7 @@ npm run build && npm start   # production
 - URL: `/admin` (login at `/admin/login`)
 - Credentials come from `.env.local` (`ADMIN_USER`, `ADMIN_PASSWORD`). Change them and `SESSION_SECRET` before going live.
 - Add / edit / delete news, upload a featured image (or paste a URL), set category, author, tags, publish date, draft/published.
+- Manage categories at `/admin/categories`: add, rename, change slug/colour/menu order, hide from menu, delete (only when empty).
 - Toggle **Featured** (homepage hero + "Make it modern") and **Trending** (top ticker) right from the list.
 - Drafts are hidden from the public site; logged-in admins can preview them.
 - Deleting an article (or replacing its image) also removes the uploaded image from Storage.
@@ -39,4 +40,4 @@ npm run build && npm start   # production
 - `app/(site)/` — public pages: home, `/category/[slug]`, `/news/[slug]`, `/search`, about, contact
 - `app/admin/` — login, dashboard, add/edit forms, server actions
 - `components/` — header, nav, cards, sidebar widgets
-- `lib/categories.ts` — menu categories and their colours
+- `lib/categories.ts` — categories (stored in Supabase `public.categories`)

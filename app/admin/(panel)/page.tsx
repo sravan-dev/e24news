@@ -1,6 +1,6 @@
 import { hasSecretKey } from "@/lib/supabase";
 import Link from "next/link";
-import { CATEGORIES, categoryName } from "@/lib/categories";
+import { getCategories } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { listArticles, stats } from "@/lib/store";
 import { toggleArticleFlag } from "../actions";
@@ -27,8 +27,9 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const status = sp.status === "published" || sp.status === "draft" ? sp.status : undefined;
-  const [s, { items, total }] = await Promise.all([
+  const [s, categories, { items, total }] = await Promise.all([
     stats(),
+    getCategories(),
     listArticles({
       includeDrafts: true,
       status,
@@ -83,7 +84,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
           <input name="q" defaultValue={sp.q} placeholder="Search title, excerpt or tags..." />
           <select name="category" defaultValue={sp.category ?? ""}>
             <option value="">All categories</option>
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.name} ({s.byCategory[c.slug] ?? 0})
               </option>
@@ -127,7 +128,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
                       </div>
                     </div>
                   </td>
-                  <td>{categoryName(a.category)}</td>
+                  <td>{categories.find((c) => c.slug === a.category)?.name ?? a.category}</td>
                   <td>
                     <span className={`pill ${a.status === "published" ? "pub" : "draft"}`}>
                       {a.status === "published" ? "Published" : "Draft"}

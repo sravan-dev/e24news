@@ -22,4 +22,6 @@ export interface Category {
   slug: string;
   name: string;
   color: string;
+  sortOrder: number;
+  showInMenu: boolean;
 }

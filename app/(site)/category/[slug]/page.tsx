@@ -15,13 +15,13 @@ const TOP = 3;
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ page?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const cat = getCategory((await params).slug);
+  const cat = await getCategory((await params).slug);
   return { title: cat ? `${cat.name} News` : "Category" };
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const cat = getCategory(slug);
+  const cat = await getCategory(slug);
   if (!cat) notFound();
   const page = Math.max(1, Number((await searchParams).page) || 1);
 
