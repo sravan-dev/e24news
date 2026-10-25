@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listArticles } from "@/lib/store";
+import AdSlot from "./AdSlot";
 import { BlockTitle, CardRow, CardV, MiniGrid } from "./cards";
 import Icon from "./Icon";
 import LoadMore from "./LoadMore";
@@ -93,8 +94,10 @@ export default async function Sidebar({ full = true }: { full?: boolean }) {
   return (
     <aside className="sidebar">
       <StayConnected />
+      <AdSlot placement="sidebar" />
       {full && <MakeItModern />}
       <MostPopular />
+      <AdSlot placement="sidebar" />
       {full && <LatestReviews />}
       <RecentComments />
     </aside>

@@ -1,7 +1,9 @@
+import { Fragment } from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import AdSlot from "@/components/AdSlot";
 import { BlockTitle, CardV } from "@/components/cards";
 import Icon from "@/components/Icon";
 import Sidebar from "@/components/Sidebar";
@@ -39,6 +41,9 @@ export default async function ArticlePage({ params }: Props) {
   const origin = process.env.SITE_URL || `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
   const url = encodeURIComponent(`${origin}/news/${a.slug}`);
   const text = encodeURIComponent(a.title);
+  const paras = paragraphs(a.content);
+  // Long articles get an inline ad after a random paragraph, away from the start and end.
+  const adAfter = paras.length >= 4 ? 2 + Math.floor(Math.random() * (paras.length - 3)) : -1;
 
   return (
     <div className="container">
@@ -88,8 +93,11 @@ export default async function ArticlePage({ params }: Props) {
             <img src={a.image} alt={a.title} />
           </figure>
           <div className="body">
-            {paragraphs(a.content).map((p, i) => (
-              <p key={i}>{p}</p>
+            {paras.map((p, i) => (
+              <Fragment key={i}>
+                <p>{p}</p>
+                {i + 1 === adAfter && <AdSlot placement="inline" className="in-body" />}
+              </Fragment>
             ))}
           </div>
           {a.tags.length > 0 && (

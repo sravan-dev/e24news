@@ -25,3 +25,14 @@ export interface Category {
   sortOrder: number;
   showInMenu: boolean;
 }
+
+export type AdPlacement = "sidebar" | "inline";
+
+export interface Ad {
+  id: string;
+  title: string;
+  image: string;
+  linkUrl: string;
+  placement: AdPlacement;
+  active: boolean;
+}

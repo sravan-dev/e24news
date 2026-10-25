@@ -201,12 +201,12 @@ const IMAGE_TYPES: Record<string, string> = {
 export const MAX_UPLOAD = 5 * 1024 * 1024;
 
 /** Uploads an image to the public bucket and returns its public URL. */
-export async function uploadImage(file: File): Promise<string> {
+export async function uploadImage(file: File, folder = ""): Promise<string> {
   const ext = IMAGE_TYPES[file.type];
   if (!ext) throw new Error("Image must be JPG, PNG, WebP, GIF or AVIF.");
   if (file.size > MAX_UPLOAD) throw new Error("Image must be 5 MB or smaller.");
   const d = new Date();
-  const path = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${crypto.randomUUID()}.${ext}`;
+  const path = `${folder}${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${crypto.randomUUID()}.${ext}`;
   const storage = admin().storage.from(IMAGE_BUCKET);
   const { error } = await storage.upload(path, file, { contentType: file.type, cacheControl: "31536000" });
   if (error) throw new Error(`Upload failed: ${error.message}`);

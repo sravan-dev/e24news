@@ -121,3 +121,13 @@
 .user-reset { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; background: #f7f9fc; border: 1px solid #e3e5e9; border-radius: 8px; }
 .user-reset input { flex: 1 1 180px; border: 1px solid #d5d8de; border-radius: 6px; padding: 7px 9px; font-size: 14px; background: #fff; }
 @media (max-width: 900px) { .set-grid { grid-template-columns: 1fr; } }
+
+/* Ads */
+.ad-form { display: flex; gap: 14px; align-items: flex-start; flex: 1; min-width: 0; }
+.ad-thumb { width: 150px; height: 100px; object-fit: contain; flex: none; border-radius: 6px; background: #f0f1f3; border: 1px dashed #d5d8de; display: flex; align-items: center; justify-content: center; color: #9aa0a6; font-size: 12px; }
+.ad-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.ad-fields input[type="text"], .ad-fields select { border: 1px solid #d5d8de; border-radius: 6px; padding: 7px 9px; font-size: 14px; background: #fff; flex: 1 1 220px; min-width: 160px; }
+.ad-fields select { flex: 0 1 190px; }
+.ad-fields input[type="file"] { flex: 1 1 220px; font-size: 13px; }
+.ad-fields .adm-btn { padding: 7px 12px; font-size: 13px; }
+@media (max-width: 700px) { .ad-form { flex-direction: column; } .ad-thumb { width: 100%; height: 140px; } }

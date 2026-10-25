@@ -29,6 +29,7 @@ import {
   updateCategory,
   type CategoryInput,
 } from "@/lib/categories";
+import { createAd, deleteAd, getAd, updateAd } from "@/lib/ads";
 import { slugify } from "@/lib/format";
 import {
   createArticle,
@@ -211,6 +212,68 @@ export async function removeCategory(_: FormState, form: FormData): Promise<Form
       }
     }
     await deleteCategory(slug);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  revalidatePath("/", "layout");
+  return { ok: "Deleted." };
+}
+
+// ---------- Ads ----------
+
+/** Creates or updates an ad. The image comes from an upload or a pasted URL. */
+export async function saveAd(_: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  const get = (k: string) => String(form.get(k) ?? "").trim();
+  const id = get("id");
+  const title = get("title");
+  const linkUrl = get("linkUrl");
+  const placement = get("placement");
+  const imageUrl = get("imageUrl");
+  if (!title) return { error: "Name is required (also used as the image's alt text)." };
+  if (placement !== "sidebar" && placement !== "inline") return { error: "Choose where the ad shows." };
+  if (linkUrl && !/^https?:\/\/\S+$/i.test(linkUrl)) return { error: "Link must start with http:// or https://" };
+  if (imageUrl && !/^https?:\/\/\S+$/i.test(imageUrl)) return { error: "Image URL must start with http:// or https://" };
+
+  let previous;
+  try {
+    previous = id ? await getAd(id) : undefined;
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  if (id && !previous) return { error: "Ad not found — it may have been deleted." };
+
+  let image = imageUrl || previous?.image || "";
+  const file = form.get("imageFile");
+  if (file instanceof File && file.size > 0) {
+    try {
+      image = await uploadImage(file, "ads/");
+    } catch (e) {
+      return { error: (e as Error).message };
+    }
+  }
+  if (!image) return { error: "Add the ad image (upload a file or paste an image URL)." };
+
+  const input = { title, image, linkUrl, placement, active: form.get("active") === "on" } as const;
+  try {
+    if (previous) await updateAd(previous.id, input);
+    else await createAd(input);
+  } catch (e) {
+    if (image !== imageUrl && image !== previous?.image) await removeImage(image); // don't leave an orphaned upload
+    return { error: (e as Error).message };
+  }
+  if (previous && previous.image !== image) await removeImage(previous.image);
+  revalidatePath("/", "layout");
+  return { ok: previous ? "Saved." : `Added "${title}".` };
+}
+
+export async function removeAd(_: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  try {
+    const ad = await getAd(String(form.get("id") ?? ""));
+    if (!ad) return { error: "Ad not found — it may have been deleted." };
+    await deleteAd(ad.id);
+    await removeImage(ad.image);
   } catch (e) {
     return { error: (e as Error).message };
   }

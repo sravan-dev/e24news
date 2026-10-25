@@ -1,8 +1,11 @@
+import { Fragment } from "react";
+import AdSlot from "@/components/AdSlot";
 import { BlockTitle, CardH, CardRow, CardV, OverlayCard } from "@/components/cards";
 import PagedBlock from "@/components/PagedBlock";
 import Pagination from "@/components/Pagination";
 import Sidebar, { MostPopular, RecentComments } from "@/components/Sidebar";
 import Trending from "@/components/Trending";
+import { countAds } from "@/lib/ads";
 import { getCategories } from "@/lib/categories";
 import { getLatest, listArticles } from "@/lib/store";
 import type { Article } from "@/lib/types";
@@ -10,6 +13,16 @@ import type { Article } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 const PER_PAGE = 10;
+
+/** Up to `n` distinct random positions in 1..max (an ad goes after section i-1). */
+function randomGaps(max: number, n: number): Set<number> {
+  const all = Array.from({ length: max }, (_, i) => i + 1);
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
+  }
+  return new Set(all.slice(0, n));
+}
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -98,6 +111,73 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const band = dontMiss.slice(0, 3);
   const pages = Math.ceil(latest.total / PER_PAGE);
 
+  // Left-column sections in order; inline ads are dropped between them at random.
+  const sections: { key: string; node: React.ReactNode }[] = [];
+  sections.push({
+    key: "dont-miss",
+    node: (
+      <section className="section">
+        <h2 className="block-title" style={{ "--bc": "#f5c518", "--bt": "#111" } as React.CSSProperties}>
+          <span>Don&apos;t Miss</span>
+        </h2>
+        <PagedBlock pages={chunk(dontMiss, 5).map((p, i) => <BigPlusList key={i} items={p} />)} />
+      </section>
+    ),
+  });
+  if (has("qatar"))
+    sections.push({
+      key: "qatar",
+      node: (
+        <section className="section">
+          <BlockTitle category="qatar" />
+          <PagedBlock pages={chunk(qatar, 6).map((p, i) => <TwoBigPlusRows key={i} items={p} />)} />
+        </section>
+      ),
+    });
+  if (has("gulf"))
+    sections.push({
+      key: "gulf",
+      node: (
+        <section className="section">
+          <BlockTitle category="gulf" />
+          <PagedBlock
+            pages={chunk(gulf, 3).map((p, i) => (
+              <div className="grid-3" key={i}>
+                {p.map((a) => (
+                  <CardV key={a.id} a={a} size="sm" titleMax={55} />
+                ))}
+              </div>
+            ))}
+          />
+        </section>
+      ),
+    });
+  if (has("world"))
+    sections.push({
+      key: "world",
+      node: (
+        <section className="section">
+          <BlockTitle category="world" />
+          <BigPlusList items={world} />
+        </section>
+      ),
+    });
+  if (has("grama-vartha"))
+    sections.push({
+      key: "grama-vartha",
+      node: (
+        <section className="section">
+          <BlockTitle category="grama-vartha" />
+          <div className="list" style={{ gap: 40 }}>
+            {grama.map((a) => (
+              <CardH key={a.id} a={a} />
+            ))}
+          </div>
+        </section>
+      ),
+    });
+  const adGaps = randomGaps(sections.length, Math.min(2, await countAds("inline")));
+
   return (
     <div className="container">
       <Trending items={trending.map((a) => ({ title: a.title, href: `/news/${a.slug}` }))} />
@@ -121,52 +201,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <>
           <div className="with-sidebar">
             <div>
-              <section className="section">
-                <h2 className="block-title" style={{ "--bc": "#f5c518", "--bt": "#111" } as React.CSSProperties}>
-                  <span>Don&apos;t Miss</span>
-                </h2>
-                <PagedBlock pages={chunk(dontMiss, 5).map((p, i) => <BigPlusList key={i} items={p} />)} />
-              </section>
-
-              {has("qatar") && (
-              <section className="section">
-                <BlockTitle category="qatar" />
-                <PagedBlock pages={chunk(qatar, 6).map((p, i) => <TwoBigPlusRows key={i} items={p} />)} />
-              </section>
-              )}
-
-              {has("gulf") && (
-              <section className="section">
-                <BlockTitle category="gulf" />
-                <PagedBlock
-                  pages={chunk(gulf, 3).map((p, i) => (
-                    <div className="grid-3" key={i}>
-                      {p.map((a) => (
-                        <CardV key={a.id} a={a} size="sm" titleMax={55} />
-                      ))}
-                    </div>
-                  ))}
-                />
-              </section>
-              )}
-
-              {has("world") && (
-              <section className="section">
-                <BlockTitle category="world" />
-                <BigPlusList items={world} />
-              </section>
-              )}
-
-              {has("grama-vartha") && (
-              <section className="section">
-                <BlockTitle category="grama-vartha" />
-                <div className="list" style={{ gap: 40 }}>
-                  {grama.map((a) => (
-                    <CardH key={a.id} a={a} />
-                  ))}
-                </div>
-              </section>
-              )}
+              {sections.map((sec, i) => (
+                <Fragment key={sec.key}>
+                  {sec.node}
+                  {adGaps.has(i + 1) && <AdSlot placement="inline" className="section" />}
+                </Fragment>
+              ))}
             </div>
             <Sidebar />
           </div>
