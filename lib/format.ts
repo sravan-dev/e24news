@@ -29,8 +29,13 @@ export function slugify(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    // Drop accents on Latin letters (é → e) but keep the vowel signs that
+    // Malayalam and other Indic scripts need to stay readable.
+    .replace(/(\p{Script=Latin})\p{M}+/gu, "$1")
+    .replace(/[‌‍]/g, "")
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
+    .normalize("NFC")
     .slice(0, 80);
 }
 
