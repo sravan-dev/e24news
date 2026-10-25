@@ -4,6 +4,7 @@ import { getCategories } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { listArticles, stats } from "@/lib/store";
 import { toggleArticleFlag } from "../actions";
+import BulkBar from "./BulkBar";
 import DeleteButton from "./DeleteButton";
 
 const PER_PAGE = 15;
@@ -102,10 +103,12 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
             </Link>
           )}
         </form>
+        <BulkBar key={items.map((a) => a.id).join()} />
         <div className="adm-table-scroll">
           <table className="adm-table">
             <thead>
               <tr>
+                <th className="t-check" />
                 <th>Title</th>
                 <th>Category</th>
                 <th>Status</th>
@@ -118,6 +121,16 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
             <tbody>
               {items.map((a) => (
                 <tr key={a.id}>
+                  <td className="t-check">
+                    <input
+                      type="checkbox"
+                      name="ids"
+                      value={a.id}
+                      form="bulk-form"
+                      className="bulk-check"
+                      aria-label={`Select "${a.title}"`}
+                    />
+                  </td>
                   <td>
                     <div className="t-title">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -157,7 +170,7 @@ export default async function AdminHome({ searchParams }: { searchParams: Promis
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
                     No articles match.
                   </td>
                 </tr>

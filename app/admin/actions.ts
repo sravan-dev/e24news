@@ -151,6 +151,14 @@ export async function removeArticle(form: FormData) {
   revalidatePath("/", "layout");
 }
 
+/** Deletes every article ticked in the list (and their uploaded images). */
+export async function bulkDeleteArticles(form: FormData) {
+  await requireAdmin();
+  const ids = [...new Set(form.getAll("ids").map(String))].filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+  for (const id of ids) await deleteArticle(id);
+  revalidatePath("/", "layout");
+}
+
 export async function toggleArticleFlag(form: FormData) {
   await requireAdmin();
   const flag = form.get("flag") === "trending" ? "trending" : "featured";

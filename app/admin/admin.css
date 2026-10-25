@@ -41,6 +41,11 @@
 .pill.draft { background: #fff4e5; color: #b26a00; }
 .flag { border: 1px solid #d5d8de; background: #fff; border-radius: 999px; padding: 2px 10px; font-size: 12px; cursor: pointer; color: #6b7280; }
 .flag.on { background: #111; border-color: #111; color: #fff; }
+.adm-bulk { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid #eceef1; background: #fafbfc; }
+.adm-bulk .muted { color: #6b7280; font-size: 13px; flex: 1; }
+.adm-bulk .adm-btn { padding: 6px 12px; font-size: 13px; }
+.adm-table .t-check { width: 36px; padding-right: 0; }
+.adm-table .t-check input, .adm-bulk input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
 .row-actions .adm-btn { padding: 6px 10px; font-size: 13px; }
 .adm-pager { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; color: #6b7280; border-top: 1px solid #eceef1; }
