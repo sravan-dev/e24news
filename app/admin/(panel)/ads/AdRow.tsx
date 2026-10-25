@@ -67,6 +67,7 @@ export default function AdRow({ ad }: { ad?: Ad }) {
           <select name="placement" defaultValue={ad?.placement ?? "sidebar"} aria-label="Where it shows">
             <option value="sidebar">Right sidebar</option>
             <option value="inline">In sections (random)</option>
+            <option value="header">Header (top right)</option>
           </select>
           <label className="check" title="Show this ad on the site">
             <input type="checkbox" name="active" defaultChecked={ad?.active ?? true} /> Live

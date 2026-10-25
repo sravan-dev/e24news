@@ -28,7 +28,8 @@ export default async function AdsPage() {
         {ads.length === 0 && <p style={{ padding: 20, color: "#6b7280" }}>No ads yet.</p>}
       </div>
       <p className="hint" style={{ color: "#6b7280", fontSize: 13, marginTop: 14 }}>
-        <b>Right sidebar</b> ads show in the right column of the home, category and article pages (up to two per
+        <b>Header</b> ads fill the 728 × 90 slot at the top right, next to the logo, on every page (hidden on
+        phones); with several live, each page load picks one. <b>Right sidebar</b> ads show in the right column of the home, category and article pages (up to two per
         page; 300 × 250 or 300 × 600 images work best). <b>In sections</b> ads are placed at random spots between
         home page sections, inside long articles and in the wide banner slot (728 × 90 or 970 × 250 work best). Every
         page load picks at random from the live ads, and a page never shows the same ad twice. Untick

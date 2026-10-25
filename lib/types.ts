@@ -26,7 +26,7 @@ export interface Category {
   showInMenu: boolean;
 }
 
-export type AdPlacement = "sidebar" | "inline";
+export type AdPlacement = "sidebar" | "inline" | "header";
 
 export interface Ad {
   id: string;

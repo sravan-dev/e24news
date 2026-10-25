@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getMenuCategories } from "@/lib/categories";
 import { longDate, truncate } from "@/lib/format";
 import { getLatest } from "@/lib/store";
+import AdSlot from "./AdSlot";
 import Icon from "./Icon";
 import NavBar from "./NavBar";
 
@@ -45,13 +46,18 @@ export async function Header() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="E24 News" />
           </Link>
-          <div className="ad-slot">
-            <div>
-              <b>Advertise with E24 News</b>
-              <div className="tag">Reach readers across Kerala &amp; the Gulf</div>
-            </div>
-            <span>728 × 90</span>
-          </div>
+          <AdSlot
+            placement="header"
+            fallback={
+              <Link href="/contact" className="ad-slot">
+                <div>
+                  <b>Advertise with E24 News</b>
+                  <div className="tag">Reach readers across Kerala &amp; the Gulf</div>
+                </div>
+                <span>728 × 90</span>
+              </Link>
+            }
+          />
         </div>
       </header>
       <NavBar categories={categories} />

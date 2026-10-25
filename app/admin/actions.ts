@@ -231,7 +231,7 @@ export async function saveAd(_: FormState, form: FormData): Promise<FormState> {
   const placement = get("placement");
   const imageUrl = get("imageUrl");
   if (!title) return { error: "Name is required (also used as the image's alt text)." };
-  if (placement !== "sidebar" && placement !== "inline") return { error: "Choose where the ad shows." };
+  if (placement !== "sidebar" && placement !== "inline" && placement !== "header") return { error: "Choose where the ad shows." };
   if (linkUrl && !/^https?:\/\/\S+$/i.test(linkUrl)) return { error: "Link must start with http:// or https://" };
   if (imageUrl && !/^https?:\/\/\S+$/i.test(imageUrl)) return { error: "Image URL must start with http:// or https://" };
 
